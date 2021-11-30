@@ -1,0 +1,60 @@
+name: Build server workflow
+on:
+  push:
+    tags: '*'
+
+jobs:
+  build:
+    runs-on: [self-hosted, Windows, X64]
+    steps:
+
+    - name: Fetch the repository and submodules
+      uses: actions/checkout@v2.1.0
+      with:
+        token: ${{ secrets.BUILD_SERVER_TOKEN }}
+        submodules: recursive
+      
+    - name: Build the project
+      run: ci\build\build.bat ci_config.ini
+
+    - name: Execute PC-Lint
+      run: ci\codechecker\pc_lint_parser.exe ci_config.ini
+
+    - name: Zip assets folder
+      run: Compress-Archive ci\assets\* assets.zip
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: build_artifacts
+        path: ci\assets\*
+
+    - name: Catch the tagname
+      uses: dawidd6/action-get-tag@v1
+      id: tagName
+
+    - name: Delete the tag
+      uses: dev-drprasad/delete-tag-and-release@v0.1.2
+      with:
+        delete_release: true
+        tag_name: ${{ steps.tagName.outputs.tag }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Find absolute path of *.bin and *.hex
+      id: bin_path
+      run: |
+        $out_bin = (Resolve-Path .\ci\assets\*.bin) | Select-String "C:"
+        echo "::set-output name=path_bin::$out_bin"
+        $out_hex = (Resolve-Path .\ci\assets\*.hex) | Select-String "C:"
+        echo "::set-output name=path_hex::$out_hex"
+      shell: powershell
+
+    - name: Create release
+      uses: johnwbyrd/update-release@v1.0.0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: assets.zip ${{ steps.bin_path.outputs.path_bin }} ${{ steps.bin_path.outputs.path_hex }}
+        tag: ${{ steps.tagName.outputs.tag }}
+        release: ${{ steps.tagName.outputs.tag }}
+        prerelease: true
