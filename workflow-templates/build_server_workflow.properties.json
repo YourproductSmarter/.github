@@ -1,0 +1,5 @@
+{
+    "name": "Build server workflow",
+    "description": "Building a project on the build-server",
+    "iconName": "build-server-icon.svg"
+}
