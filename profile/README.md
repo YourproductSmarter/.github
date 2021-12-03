@@ -1,7 +1,4 @@
 
-![Baulds_logo_light](./Baulds_Logo_CYMK.png#gh-light-mode-only)
-![Baulds_logo_dark](./Baulds_Logo_CYMK_WHITE_TEXT.png#gh-dark-mode-only)
-
 ## Hi there 👋
 
 <!--
